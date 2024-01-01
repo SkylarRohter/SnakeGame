@@ -2,13 +2,21 @@
 #include <ncurses.h>
 #include <random>
 
-const int width = 20;
-const int height = 20;
+const int width = 40;
+const int height = 40;
 
 int score;
 
 int x, y;
 int fruitX, fruitY;
+int fruitCounter = 0;
+int frameCounter = 0, numAnimationFrames = 8;
+
+bool eatAnimationActive = false, toggledAnimation = false;
+
+bool useSuperFruit = false;
+bool superFruitIsPresent = false;
+int superFruitX, superFruitY;
 
 int tailPositionsX[100], tailPositionsY[100];
 int tailLength = 0;
@@ -32,6 +40,12 @@ int getRandom(int bound) {
 void init() {
     initscr();
     clear();
+    std::cout << "Use SuperFruit? \n1. Yes\n2.No ";
+    int response = 0;
+    std::cin >> response;
+    if (response == 1) {
+        useSuperFruit = true;
+    }
     noecho();
     cbreak();
     curs_set(0);
@@ -50,6 +64,24 @@ void init() {
     score = 0;
 }
 
+/*
+ * Method for pausing game
+ */
+void playHeadAnimation() {
+    if (numAnimationFrames > 0) {
+        if (frameCounter % 2 == 0) {
+            eatAnimationActive = true;
+        } else {
+            eatAnimationActive = false;
+        }
+        numAnimationFrames--;
+    } else {
+        numAnimationFrames = 5;
+        eatAnimationActive = false;
+        toggledAnimation = false;
+    }
+}
+
 void renderWindow() {
     clear();
     for (int i = 0; i < width + 2; i++) {
@@ -62,10 +94,14 @@ void renderWindow() {
                 mvprintw(w, h, "#");
             } else if (w == 0 | w == width + 1) {
                 mvprintw(w, h, "+");
-            } else if (y == h && x == w) {
+            } else if (y == h && x == w && !eatAnimationActive) {
                 mvprintw(w, h, "0");
+            } else if (y == h && x == w && eatAnimationActive) {
+                mvprintw(w, h, " ");
             } else if (fruitY == h && fruitX == w) {
                 mvprintw(w, h, "$");
+            } else if (superFruitY == h && superFruitX == w && superFruitIsPresent) {
+                mvprintw(w, h, "@");
             } else {
                 for (int j = 0; j < tailLength; j++) {
                     if (tailPositionsX[j] == w && tailPositionsY[j] == h) {
@@ -79,6 +115,7 @@ void renderWindow() {
     }
     refresh();
 }
+
 
 void getInput() {
     keypad(stdscr, TRUE);
@@ -101,6 +138,7 @@ void getInput() {
             isGameOver = true;
     }
 }
+
 void updateWindow() {
     int lastX = tailPositionsX[0];
     int lastY = tailPositionsY[0];
@@ -132,7 +170,7 @@ void updateWindow() {
             x++;
             break;
     }
-    if (x > width || y < 0) {
+    if (x > width || y > height) {
         isGameOver = true;
     }
     if (x < 1 || y < 1) {
@@ -143,6 +181,26 @@ void updateWindow() {
         fruitX = getRandom(width);
         fruitY = getRandom(height);
         tailLength++;
+        if (fruitCounter <= 5 && !superFruitIsPresent) {
+            fruitCounter++;
+        }
+    }
+    if (fruitCounter == 5 && useSuperFruit) {
+        superFruitX = getRandom(width);
+        superFruitY = getRandom(height);
+        superFruitIsPresent = true;
+        fruitCounter = 0;
+    }
+    if (superFruitX == x && superFruitY == y) {
+        score += 10;
+        superFruitX = getRandom(width);
+        superFruitY = getRandom(height);
+        tailLength += 10;
+        superFruitIsPresent = false;
+        toggledAnimation = true;
+    }
+    if (toggledAnimation) {
+        playHeadAnimation();
     }
     for (int i = 0; i < tailLength; i++) {
         if (tailPositionsX[i] == x && tailPositionsY[i] == y) {
@@ -158,10 +216,12 @@ int main() {
         renderWindow();
         getInput();
         updateWindow();
+        frameCounter++;
     }
     getch();
     endwin();
-    refresh();
-    std::cout << "\nGame Over";
+    std::string clearLastLine = ("\33[2K\r(");
+    std::cout << clearLastLine << "\nGame Over. " << +"\nScore: " << score << "\nHigh Score: " << std::flush;
+
     return 0;
 }
