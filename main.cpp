@@ -28,6 +28,7 @@ enum direction {
     DOWN
 };
 direction dir;
+direction lastDir;
 bool isGameOver;
 
 int getRandom(int bound) {
@@ -99,10 +100,13 @@ void renderWindow() {
             } else if (y == h && x == w && eatAnimationActive) {
                 mvprintw(w, h, " ");
             } else if (fruitY == h && fruitX == w) {
-                mvprintw(w, h, "$");
+                mvprintw(w, h, "*");
             } else if (superFruitY == h && superFruitX == w && superFruitIsPresent) {
                 mvprintw(w, h, "@");
             } else {
+             /*
+                Lots of operations in the rending of the window, could effect performance as more fruit are added to be render
+             */ 
                 for (int j = 0; j < tailLength; j++) {
                     if (tailPositionsX[j] == w && tailPositionsY[j] == h) {
                         mvprintw(w, h, "*");
@@ -121,19 +125,30 @@ void getInput() {
     keypad(stdscr, TRUE);
     halfdelay(1);
     int input = getch();
+    if(fruitCounter > 1) {
+      lastDir = dir;
+    }
     switch (input) {
         case KEY_LEFT:
+          if(lastDir != RIGHT) {
             dir = LEFT;
-            break;
+          }
+          break;
         case KEY_RIGHT:
+          if(lastDir != LEFT) {
             dir = RIGHT;
-            break;
+          }
+          break;
         case KEY_UP:
+          if(lastDir != DOWN) {
             dir = UPP;
-            break;
+          }
+          break;
         case KEY_DOWN:
+          if(lastDir != UPP) {
             dir = DOWN;
-            break;
+          }
+          break;
         case 81:
             isGameOver = true;
     }
@@ -155,20 +170,21 @@ void updateWindow() {
         lastX = l2x;
         lastY = l2y;
     }
-
     switch (dir) {
-        case LEFT:
-            y--;
-            break;
-        case RIGHT:
-            y++;
-            break;
-        case UPP:
-            x--;
-            break;
-        case DOWN:
-            x++;
-            break;
+      case LEFT:
+        y--;
+        break;
+      case RIGHT:
+        y++;
+        break;
+      case UPP:
+        x--;
+        break;
+      case DOWN:
+        x++;
+        break;
+      case STOP:
+        break;
     }
     if (x > width || y > height) {
         isGameOver = true;
