@@ -2,7 +2,7 @@
 #include <ncurses.h>
 #include <random>
 
-const int width = 40;
+const int width = 20;
 const int height = 40;
 
 int score;
@@ -109,7 +109,11 @@ void renderWindow() {
              */ 
                 for (int j = 0; j < tailLength; j++) {
                     if (tailPositionsX[j] == w && tailPositionsY[j] == h) {
+                      if(fruitY == h && fruitX == w){
+                        mvprintw(w, h, "X");
+                      } else {
                         mvprintw(w, h, "*");
+                      }
                     }
                 }
             }
@@ -125,7 +129,7 @@ void getInput() {
     keypad(stdscr, TRUE);
     halfdelay(1);
     int input = getch();
-    if(fruitCounter > 1) {
+    if(score > 1) {
       lastDir = dir;
     }
     switch (input) {
